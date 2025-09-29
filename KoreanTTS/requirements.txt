@@ -1,0 +1,8 @@
+# For MeloTTS (primary option)
+melo-tts
+librosa
+soundfile
+numpy
+
+# For gTTS (fallback option)
+gTTS
