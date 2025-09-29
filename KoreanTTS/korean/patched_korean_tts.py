@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Patch MeloTTS to avoid Japanese imports and enable Korean speed control
+With fallback to gTTS when MeloTTS is not available
 """
 
 import sys
@@ -69,8 +70,52 @@ def convert_korean_with_patched_melotts(input_file, output_file, speed=1.0):
         
         return True
         
+    except ImportError as e:
+        if "melo" in str(e):
+            print("MeloTTS not available, falling back to gTTS...")
+            return convert_korean_with_gtts(input_file, output_file, speed)
+        else:
+            print(f"Error: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
     except Exception as e:
         print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def convert_korean_with_gtts(input_file, output_file, speed=1.0):
+    """Fallback to gTTS when MeloTTS is not available"""
+    try:
+        from gtts import gTTS
+        
+        # Check if input file exists
+        if not os.path.exists(input_file):
+            raise FileNotFoundError(f"Input file not found: {input_file}")
+        
+        # Read text from file
+        with open(input_file, 'r', encoding='utf-8') as f:
+            text = f.read().strip()
+        
+        if not text:
+            raise ValueError("Input file is empty")
+        
+        print(f"Converting text to speech with gTTS: {text[:50]}...")
+        
+        # Create gTTS object for Korean
+        # Note: gTTS doesn't have precise speed control, but slow=True makes it slower
+        slow = speed < 1.0
+        tts = gTTS(text=text, lang='ko', slow=slow)
+        
+        # Save to file
+        tts.save(output_file)
+        print(f"Audio saved to: {output_file}")
+        print(f"Speed setting: {'slow' if slow else 'normal'} (approx. {speed}x)")
+        
+        return True
+    except Exception as e:
+        print(f"Error with gTTS fallback: {e}")
         import traceback
         traceback.print_exc()
         return False

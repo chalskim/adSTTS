@@ -9,6 +9,7 @@ from tkinter import ttk, filedialog, messagebox
 import threading
 import os
 import sys
+import subprocess
 
 # Add the current directory to Python path to import our TTS modules
 # This is especially important when running as a PyInstaller executable
@@ -153,16 +154,13 @@ class KoreanTTSGUI:
         
     def convert_text_to_speech(self):
         try:
-            # Read input text
-            with open(self.input_file.get(), 'r', encoding='utf-8') as f:
-                text = f.read().strip()
-            
-            if not text:
-                self.root.after(0, self.conversion_error, "Input file is empty")
+            # Validate input file exists
+            if not os.path.exists(self.input_file.get()):
+                self.root.after(0, self.conversion_error, f"Input file not found: {self.input_file.get()}")
                 return
                 
-            # Try to use patched Korean TTS
-            success = self.convert_with_patched_tts(text)
+            # Use the patched Korean TTS script with fallback
+            success = self.convert_with_patched_tts_script()
             
             if success:
                 self.root.after(0, self.conversion_success)
@@ -172,54 +170,37 @@ class KoreanTTSGUI:
         except Exception as e:
             self.root.after(0, self.conversion_error, str(e))
             
-    def convert_with_patched_tts(self, text):
-        """Convert text using patched MeloTTS"""
+    def convert_with_patched_tts_script(self):
+        """Convert text using the patched Korean TTS script with fallback to gTTS"""
         try:
-            # Create a mock Japanese module to avoid import errors
-            import sys
-            from types import ModuleType
+            # Get the directory of this script
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            patched_tts_script = os.path.join(script_dir, "korean", "patched_korean_tts.py")
             
-            class MockJapaneseModule(ModuleType):
-                def __init__(self):
-                    super().__init__('japanese')
-                def distribute_phone(self, *args, **kwargs):
-                    return []
+            # Validate the script exists
+            if not os.path.exists(patched_tts_script):
+                return False
+                
+            # Build command
+            cmd = [
+                sys.executable,
+                patched_tts_script,
+                self.input_file.get(),
+                self.output_file.get(),
+                str(self.speed.get())
+            ]
             
-            # Monkey patch the Japanese import
-            sys.modules['melo.text.japanese'] = MockJapaneseModule()
+            # Run the script
+            result = subprocess.run(cmd, capture_output=True, text=True, cwd=script_dir)
             
-            # Set environment variables
-            os.environ['MELO_LANG'] = 'KR'
-            os.environ['LANGUAGE'] = 'ko'
-            
-            # Import MeloTTS
-            from melo.api import TTS
-            
-            # Initialize Korean TTS
-            tts = TTS(language='KR')
-            
-            # Get speaker - handle attribute access properly
-            try:
-                # Access speaker IDs (suppressing linter warning)
-                speaker_ids = tts.hps.data.spk2id  # type: ignore
-                speakers = list(speaker_ids.keys())
-                speaker = speakers[0] if speakers else 'KR'
-            except AttributeError:
-                # Fallback if attribute structure is different
-                try:
-                    speakers = tts.speakers if hasattr(tts, 'speakers') else ['KR']
-                    speaker = speakers[0] if speakers else 'KR'
-                except:
-                    speaker = 'KR'
-            except:
-                speaker = 'KR'
-            
-            # Convert to speech with speed control
-            tts.tts_to_file(text, speaker, self.output_file.get(), speed=self.speed.get())
-            return True
-            
+            if result.returncode == 0:
+                return True
+            else:
+                print(f"Script error: {result.stderr}")
+                return False
+                
         except Exception as e:
-            print(f"MeloTTS error: {e}")
+            print(f"Error running patched TTS script: {e}")
             return False
             
     def conversion_success(self):

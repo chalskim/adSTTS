@@ -66,20 +66,20 @@ python file_noise_reduction.py
 
 ### Example:
 ```
-python whisper_stt.py my_audio.mp3
-python whisper_stt.py my_audio.mp3 large
+python3 whisper_stt.py my_audio.mp3
+python3 whisper_stt.py my_audio.mp3 large
 ```
 
 ### Real-time Transcription (Experimental)
 For real-time speech-to-text from your microphone:
 ```
-python real_time_stt.py
+python3 real_time_stt.py
 ```
 
 ### Enhanced Real-time Transcription with Noise Reduction
 For real-time speech-to-text with RNNoise-like noise reduction and WebRTC VAD:
 ```
-python real_time_stt_enhanced.py
+python3 real_time_stt_enhanced.py
 ```
 
 Note: Real-time transcription requires additional system dependencies (PortAudio) and may have installation challenges on some systems.

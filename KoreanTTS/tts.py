@@ -55,11 +55,15 @@ def main():
     if output_dir and not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
-    # Build command
+    # Convert paths to absolute paths to avoid relative path issues
+    abs_input_file = os.path.abspath(input_file)
+    abs_output_file = os.path.abspath(output_file)
+    
+    # Build command with absolute paths
     if language == "english" and speaker:
-        cmd = f"cd {language} && python3 tts.py ../{input_file} ../{output_file} {speed} {speaker}"
+        cmd = f"cd {language} && python3 tts.py '{abs_input_file}' '{abs_output_file}' {speed} {speaker}"
     else:
-        cmd = f"cd {language} && python3 tts.py ../{input_file} ../{output_file} {speed}"
+        cmd = f"cd {language} && python3 tts.py '{abs_input_file}' '{abs_output_file}' {speed}"
     
     print(f"Converting {language} text to speech...")
     print(f"Command: {cmd}")
